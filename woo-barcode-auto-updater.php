@@ -82,17 +82,18 @@ function get_product_info_from_barcode($barcode) {
     }
 
     $body = wp_remote_retrieve_body($response);
-    $matches = [];
     
-    // Try to find the product description
-    preg_match('/<div class="product-description">(.+?)<\/div>/s', $body, $matches);
-    $description = isset($matches[1]) ? strip_tags($matches[1]) : false;
-    
-    // Try to find the product image
-    preg_match('/<img class="product-image" src="(.+?)"/s', $body, $image_match);
+    // Extract product image URL
+    $image_match = [];
+    preg_match('/<div id="largeProductImage">.*?<img src="(.*?)"/s', $body, $image_match);
     $image_url = isset($image_match[1]) ? $image_match[1] : null;
 
-    // Log more detailed messages for debugging
+    // Extract product description
+    $description_match = [];
+    preg_match('/<div class="product-text-label">Description:\s*&nbsp;<span class="product-text">(.*?)<\/span>/s', $body, $description_match);
+    $description = isset($description_match[1]) ? strip_tags($description_match[1]) : false;
+
+    // Log detailed messages for debugging
     if (!$description) {
         log_barcode_update(null, $barcode, false, 'Product description not found.');
     }

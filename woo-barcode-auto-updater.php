@@ -77,17 +77,33 @@ function get_product_info_from_barcode($barcode) {
     $response = wp_remote_get($url, $args);
 
     if (is_wp_error($response)) {
+        log_barcode_update(null, $barcode, false, 'Failed to fetch URL: ' . $url);
         return false;
     }
 
     $body = wp_remote_retrieve_body($response);
     $matches = [];
     
+    // Try to find the product description
     preg_match('/<div class="product-description">(.+?)<\/div>/s', $body, $matches);
     $description = isset($matches[1]) ? strip_tags($matches[1]) : false;
     
+    // Try to find the product image
     preg_match('/<img class="product-image" src="(.+?)"/s', $body, $image_match);
     $image_url = isset($image_match[1]) ? $image_match[1] : null;
+
+    // Log more detailed messages for debugging
+    if (!$description) {
+        log_barcode_update(null, $barcode, false, 'Product description not found.');
+    }
+    if (!$image_url) {
+        log_barcode_update(null, $barcode, false, 'Product image not found.');
+    }
+
+    if (!$description && !$image_url) {
+        log_barcode_update(null, $barcode, false, 'Neither product description nor image found.');
+        return false;
+    }
 
     return ['description' => $description, 'image_url' => $image_url];
 }
